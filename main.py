@@ -1,18 +1,13 @@
 from util import *
 unthread() # turn off numpy and torch threading
+
 import mlb
-import cmd
-import plot
+import plot,test,train,fix
+import profile,fix
 from state import State
-import train
-import profile
-import fix
-import test
 
 import sys,os
-import numpy as np
 import contextlib
-import torch
 
 def create_state(cfg):
     state = State()

@@ -1,3 +1,8 @@
+import sys,os
+import mlb
+import plot,test,train,fix
+from util import *
+
 def main(cfg):
     mlb.purple('[profiling]')
     import cProfile,pstats
