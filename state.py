@@ -19,6 +19,75 @@ class State:
         kwargs = {'state': self.state}
         kwargs.update(self.__dict__)
         return kwargs
+    def to(self,device):
+        return
+    def main_new(self,cfg):
+        """
+        wrapper for state.new()
+        """
+        print("no file to load from, creating new state...")
+        if cfg.device != 'cpu':
+            with torch.cuda.device(cfg.device):
+                self.new(cfg=cfg)
+        else:
+            self.new(cfg=cfg)
+        # seems to initialize on gpu anyways sometimes
+        self.to(cfg.device)
+    def main_load(self,cfg):
+        paths = outputs_regex(cfg.load)
+        # path must at least be DATE/TIME, possibly DATE/TIME/...
+        paths = [p for p in paths if len(p.parts) >= 2]
+        if len(paths) == 0:
+            mlb.red(f'load regex `{cfg.load}` yielded no files:')
+        if len(paths) != 1:
+            mlb.red(f'load regex `{cfg.load}` yielded multiple possible files:')
+            for path in paths:
+                mlb.red(f'\t{path}')
+            sys.exit(1)
+        [path] = paths
+
+        if 'saves' not in path.parts:
+            savefile = 'autosave.'+str(max([int(x.name.split('.')[1])
+                                    for x in (get_datetime_path(path) / 'saves').glob('autosave.*')]))
+            path = get_datetime_path(path) / 'saves' / savefile
+        
+        assert all(['=' in arg for arg in sys.argv[1:]])
+        overrides = [arg.split('=')[0] for arg in sys.argv[1:]]
+
+        device = None
+        if 'device' in overrides:
+            device=cfg.device # override the device
+
+        mlb.green(f"loading from {path}...")
+        self.load(path, device=device)
+
+        #mlb.purple(f"It looks like the device of the model is {self.phead.output[0].weight.device}")
+
+        if cfg.mode == 'device':
+            mlb.green(f"DEVICE: {self.cfg.device}")
+        print("loaded")
+
+        print_overrides = []
+        for override in overrides:
+            try:
+                # eg override = 'data.T'
+                dotpath = override.split('.')
+                if dotpath[-1] == 'device':
+                    raise NotImplementedError
+                target = self.cfg # the old cfg
+                source = cfg # the cfg that contains the overrides
+                for attr in dotpath[:-1]: # all but the last one (which we'll use setattr on)
+                    target = target[attr]
+                    source = source[attr]
+                overrided_val = source[dotpath[-1]]
+                print_overrides.append(f'overriding {override} to {overrided_val}')
+                with open_dict(target): # disable strict mode
+                    target[dotpath[-1]] = overrided_val
+            except Exception as e:
+                mlb.red(e)
+                pass
+        state.print_overrides = '\n'.join(print_overrides)
+
     def new(self,cfg):
         """
         Initialize dataloaders, models, etc

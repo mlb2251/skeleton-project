@@ -3,7 +3,7 @@ def window_avg(window):
     window = list(filter(lambda x: x is not None, window))
     return sum(window)/len(window)
 
-def train_model(
+def main(
     state,
     cfg,
     taskloader,

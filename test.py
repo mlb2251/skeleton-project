@@ -1,4 +1,69 @@
 
+def main_pre(cfg):
+    original_cfg = None
+    tests_from = cfg.test.from_fn or cfg.test.from_file # use fancy python `or` semantics
+    if cfg.test.from_fn is not None:
+        if cfg.test.from_fn not in test.tests.tests:
+            mlb.red(f"from_fn value not recognized. options are: {list(tests.tests.keys())}")
+            sys.exit(1)
+        test_frontiers = test.tests.tests[cfg.test.from_fn](cfg)
+        mlb.purple(f"got {len(test_frontiers)} test frontiers from {cfg.test.from_fn}()")
+        if cfg.test.to_file is not None:
+            print(f"Writing saved tests to {cfg.test.to_file}...")
+            torch.save((test_frontiers,cfg), test.tests.tests_dir / cfg.test.to_file)
+            sys.exit(0)
+    elif cfg.test.from_file is not None:
+        (test_frontiers,original_cfg) = torch.load(test.tests.tests_dir / cfg.test.from_file)
+        # note that original_cfg is just around in case you ever want a record of how the tests were created!
+        mlb.green(yaml(original_cfg))
+        tests_from = cfg.test.from_file
+        test_frontiers = preprocess(test_frontiers,original_cfg)
+        mlb.purple(f"loaded {len(test_frontiers)} test frontiers from {cfg.test.from_file} (details in `original_cfg`)")
+    else:
+        mlb.die("Specify either test.from_file or test.from_fn")
+    assert isinstance(test_frontiers,list) and len(test_frontiers) > 0
+    if cfg.load is None:
+        mlb.die("no state specified to load, exiting")
+
+def main(cfg, state):
+    if cfg.test.model_result_path is None:
+        mlb.red("please specify test.model_result_path")
+        sys.exit(1)
+    ### NOTE: this continues from the earlier 'test' section
+    if original_cfg is not None and original_cfg.test.from_fn == 'deepcoder':
+        test.cfg_diff(state.cfg.data.train,original_cfg.data.test) # print the differences
+    if cfg.test.max_tasks is not None and len(test_frontiers) > cfg.test.max_tasks:
+        mlb.red(f"Cutting down test frontiers from {len(test_frontiers)} to {cfg.test.max_tasks}")
+        test_frontiers = test_frontiers[:cfg.test.max_tasks]
+
+
+    state = fix.fix_state_testmode(state)
+    vhead = InvalidIntermediatesValueHead(cfg) if cfg.test.validator_vhead else SampleDummyValueHead()
+    solver = make_solver(cfg.data.test.solver,vhead,state.phead,cfg.data.test.max_depth)
+    if original_cfg is not None:
+        if state.cfg.data.train.V != original_cfg.data.test.V:
+            mlb.die(mlb.mk_bold(f"HUGE WARNING: You have trained on {state.cfg.data.train.V} data but are testing on {original_cfg.data.test.V}"))
+    mlb.purple("Running tests")
+
+    if cfg.test.scaffold:
+        mlb.red(mlb.mk_bold("WARNING: SCAFFOLDING IS TURNED ON"))
+        assert hasattr(test_frontiers[0],'scaffold'), "turn off scaffolding or remake ur data"
+        assert test_frontiers[0].scaffold is not None, "make sure expressive lambdas are turned on"
+
+
+    model_results = test.test_models([solver],
+                                test_frontiers,
+                                state.g,
+                                timeout=cfg.test.timeout,
+                                verbose=True,
+                                scaffold=cfg.test.scaffold,
+                                )
+    mlb.purple("plotting results")
+    plot.plot_model_results(model_results,
+                            model_result_path=cfg.test.model_result_path,
+                            file=f'{tests_from}_{cfg.test.timeout}s'
+                            )
+
 
 def test_models(astars, test_tasks, g, timeout, verbose=True, scaffold=False):
     """

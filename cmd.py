@@ -18,7 +18,6 @@ from datetime import datetime
 
 import argparse
 
-from dreamcoder.domains.tower.towerPrimitives import *
 import itertools
 import torch
 import numpy as np
@@ -30,7 +29,7 @@ import time
 
 import plot,state,test,train
 
-def cmd(cfg):
+def main(cfg):
     mlb.purple("Entered cmd mode (exit with ctrl-D)")
     os.chdir(outputs_path(''))
     print('chdir to outputs/')
@@ -74,7 +73,7 @@ def cmd(cfg):
                 continue
             for result in results:
                 result = get_datetime_path(result)
-                target_parent = ec_path('outputs_trash') / result.parent.name  # result.parent.name is DATE/
+                target_parent = toplevel_path('outputs_trash') / result.parent.name  # result.parent.name is DATE/
                 target_parent.mkdir(parents=True,exist_ok=True) 
                 result.rename(target_parent / result.name)
                 print(f'moved {result} -> {target_parent / result.name}')

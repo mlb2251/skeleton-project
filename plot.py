@@ -1,3 +1,60 @@
+from util import *
+
+def main(cfg):
+    if '___' in cfg.load:
+        cfg.load = cfg.load.replace('___',' ')
+    paths = outputs_regex(*cfg.load.split(' '))
+    # path must at least be DATE/TIME, possibly DATE/TIME/...
+    paths = [p for p in paths if len(p.parts) >= 2]
+
+    print("Initial path regex results:")
+    for p in paths:
+        print(f'\t{p}')
+
+    for i,path in enumerate(paths):
+        if 'model_results' not in path.parts:
+            if cfg.plot.suffix is None:
+                mlb.die(f'No plot.suffix provided and the regexed path doesnt contain model_results: {path}')
+            paths[i] = get_datetime_path(path) / 'model_results' / cfg.plot.suffix
+            print(f"Path {i} converted to {paths[i]}")
+
+    print("Checking these paths:")
+    for p in paths:
+        print(f'\t{p}')
+        if not p.exists():
+            print(f'\t\t-> DOES NOT EXIST')
+    paths = [p for p in paths if p.exists()]
+    print("Plotting these paths:")
+    for p in paths:
+        print(f'\t{p}')
+
+    if len(paths) == 0:
+        print("No paths to plot")
+        sys.exit(1)
+
+    model_results = []
+    for path in paths:
+        model_results.extend(torch.load(path))
+    for m in model_results:
+        m.print_dist()
+    title = cfg.plot.title if cfg.plot.title is not None else ' '.join(sys.argv[2:])
+    if cfg.plot.legend is not None:
+        legend = cfg.plot.legend.split('___')
+        legend = [x.replace('_',' ') for x in legend]
+    else:
+        legend = None
+
+    plot.plot_model_results(model_results,
+                            file=cfg.plot.file,
+                            title=title,
+                            toplevel=True,
+                            legend=legend,
+                            tb_name=cfg.plot.tb_name,
+                            cropped=cfg.plot.cropped,
+                            filetype=cfg.plot.filetype,
+                            save_model_results=False)
+    return
+
 
 class ModelResult:
     def __init__(self,

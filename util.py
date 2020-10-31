@@ -90,3 +90,25 @@ def filter_paths(paths, predicate):
         raise NotImplementedError
 
     return results
+
+def unthread():
+    """
+    disables parallelization
+    """
+    import os
+    assert 'numpy' not in sys.modules, "you should call this function before importing numpy"
+    assert 'torch' not in sys.modules, "you should call this function before importing torch"
+    os.environ["OMP_NUM_THREADS"] = "1" # export OMP_NUM_THREADS=4
+    os.environ["OPENBLAS_NUM_THREADS"] = "1" # export OPENBLAS_NUM_THREADS=4 
+    os.environ["MKL_NUM_THREADS"] = "1" # export MKL_NUM_THREADS=6
+    os.environ["VECLIB_MAXIMUM_THREADS"] = "1" # export VECLIB_MAXIMUM_THREADS=4
+    os.environ["NUMEXPR_NUM_THREADS"] = "1" # export NUMEXPR_NUM_THREADS=6
+    torch.set_num_threads(1)
+
+def deterministic(seed):
+    torch.manual_seed(seed)
+    # warning: these may slow down your model
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
+    random.seed(seed)
