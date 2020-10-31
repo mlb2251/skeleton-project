@@ -41,15 +41,3 @@ test:
   print_data: True
 
 # things that generally want to changed together or not changed much
-T: 2
-N : 5
-L: 10
-L_min: null
-L_max: null
-V: 32
-expressive_lambdas: True
-lambda_depth: 3
-allow_complex_requests: False
-max_depth: 12
-#num_mutated_tasks: 3
-#print_data: False
