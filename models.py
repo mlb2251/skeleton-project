@@ -62,7 +62,7 @@ class MNIST(Dataset):
             ## load the training data
             _traindata = torchvision.datasets.MNIST(root='./data', train=True, download=True)
             if cfg.num_train is not None:
-                _traindata = _trainset[:cfg.num_train]
+                _traindata = _traindata[:cfg.num_train]
             num_valid = int(len(_traindata)*cfg.valid_frac)
             num_train = len(_traindata) - num_valid
             validdata, traindata =  random_split(_traindata, [num_valid,num_train], generator=torch.Generator().manual_seed(cfg.seed))

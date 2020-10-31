@@ -107,9 +107,13 @@ def unthread():
     os.environ["MKL_NUM_THREADS"] = "1" # export MKL_NUM_THREADS=6
     os.environ["VECLIB_MAXIMUM_THREADS"] = "1" # export VECLIB_MAXIMUM_THREADS=4
     os.environ["NUMEXPR_NUM_THREADS"] = "1" # export NUMEXPR_NUM_THREADS=6
+    import torch
     torch.set_num_threads(1)
 
 def deterministic(seed):
+    import torch
+    import numpy as np
+    import random
     torch.manual_seed(seed)
     # warning: these may slow down your model
     torch.backends.cudnn.deterministic = True

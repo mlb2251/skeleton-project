@@ -2,6 +2,8 @@ import sys,os
 import mlb
 import plot,test,train,fix
 from util import *
+import torch
+
 
 def main_pre(cfg):
     original_cfg = None
@@ -131,7 +133,7 @@ def test_models(astars, test_tasks, g, timeout, verbose=True, scaffold=False):
 class Tests:
     def __init__(self):
         self.tests = {}
-        self.tests_dir = pathlib.Path(utils.to_absolute_path('list_tests/'))
+        self.tests_dir = toplevel_path('list_tests/')
     def test(self,fn):
         self.tests[fn.__name__] = fn
 tests = Tests()
@@ -166,7 +168,7 @@ def joshTasks(w):
         directory = "data/final_wave"
     else:
         assert False
-    directory = utils.to_absolute_path(directory)
+    directory = toplevel_path(directory)
     for fn in os.listdir(directory):
         if not fn.endswith(".json"):continue
 

@@ -3,6 +3,8 @@ import mlb
 import plot,test,train,fix
 from util import *
 
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+
 def main(cfg):
     mlb.purple("Entered cmd mode (exit with ctrl-D)")
     os.chdir(outputs_path(''))

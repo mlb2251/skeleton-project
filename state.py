@@ -3,6 +3,12 @@ import mlb
 import plot,test,train,fix
 from util import *
 
+from torch.utils.tensorboard import SummaryWriter
+import torch
+import itertools
+import contextlib
+import shutil
+
 class Poisoned: pass
 
 class State:
@@ -164,7 +170,7 @@ class State:
     def load(self, path, device=None):
         if device is not None:
             device = torch.device(device)
-        path = utils.to_absolute_path(path)
+        path = toplevel_path(path)
         print("torch.load")
         state = torch.load(path, map_location=device)
         print("self.update")

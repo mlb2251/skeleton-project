@@ -3,6 +3,12 @@ import mlb
 import plot,test,train,fix
 from util import *
 
+import torch
+from collections import defaultdict
+import numpy as np
+import torch
+from torch.utils.tensorboard import SummaryWriter
+
 def main(cfg):
     if '___' in cfg.load:
         cfg.load = cfg.load.replace('___',' ')
@@ -176,7 +182,7 @@ def plot_model_results(model_results, file, toplevel=False, legend=None, cropped
     plot.legend()
 
     plot.savefig(time_file)
-    mlb.yellow(f"saved plot to {printable_local_path(time_file)}")
+    mlb.yellow(f"saved plot to {outputs_relpath(time_file)}")
     if toplevel:
         path = toplevel_path(time_file)
         plot.savefig(path)
@@ -202,7 +208,7 @@ def plot_model_results(model_results, file, toplevel=False, legend=None, cropped
                 linewidth=4)
     plot.legend()
     plot.savefig(evals_file)
-    mlb.yellow(f"saved plot to {printable_local_path(evals_file)}")
+    mlb.yellow(f"saved plot to {outputs_relpath(evals_file)}")
 
     if w is not None:
         if j is None:
@@ -238,6 +244,6 @@ def plot_model_results(model_results, file, toplevel=False, legend=None, cropped
         w.close()
 
     if save_model_results:
-        print(f"saving model_results used in plotting to {printable_local_path(model_results_file)}")
+        print(f"saving model_results used in plotting to {outputs_relpath(model_results_file)}")
         torch.save(model_results,model_results_file)
     print(os.getcwd())
