@@ -17,31 +17,6 @@ import einops as eo
 from tqdm import tqdm
 
 
-class Config:
-    seed = 1000
-    num_train = None
-    num_test = None
-    valid_frac = .2
-    load_train = True
-    load_test = True
-    load_valid = True
-    train_workers = 2
-    test_workers = 0
-    valid_workers = 0
-    device = 6
-cfg = Config()
-
-torch.manual_seed(cfg.seed)
-# warning: these may slow down your model
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-np.random.seed(cfg.seed)
-random.seed(cfg.seed)
-
-
-
-
-
 class MNIST(Dataset):
     validdata, testdata, traindata = None, None, None
     _loaded = False

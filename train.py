@@ -6,6 +6,7 @@ from util import *
 import time
 import torch
 import numpy as np
+from tqdm import tqdm
 
 def window_avg(window):
     window = list(filter(lambda x: x is not None, window))
@@ -14,73 +15,54 @@ def window_avg(window):
 def main(
     state,
     cfg,
-    taskloader,
-    vhead,
-    phead,
-    heads,
+    trainloader,
+    testloader,
+    validloader,
+    model,
     w,
-    g,
     optimizer,
-    astar,
-    test_frontiers,
-    validation_frontiers,
     loss_window,
-    vlosses,
-    plosses,
+    loss_fn,
+    losses=None,
     frontiers=None,
     best_validation_loss=np.inf,
-    plosses_since_print=None,
-    vlosses_since_print=None,
     j=0,
     **kwargs,
         ):
     print(f"j:{j}")
-    phead.featureExtractor.run_tests()
+    """
+    Run any assertion-based tests here like model.run_tests()
+    """
 
-    if frontiers is None:
-        frontiers = []
+    frontiers = [] if frontiers is None else frontiers
+    losses = [] if losses is None else losses
     time_since_print = None
 
     while True:
-        print(f"{len(frontiers)=}")
-        if len(frontiers) == 0:
-            mlb.red("reloading frontiers")
-            frontiers = taskloader.getTasks()
-            assert len(frontiers) > 0
-        while len(frontiers) > 0: # work thru batch of `batch_size` examples
-            f = frontiers.pop(0)
 
-            if cfg.data.train.freeze:
-                frontiers.append(f) # put back at the end
-
+        for data in tqdm(trainloader, total=len(trainloader.dataset)/trainloader.batch_size, ncols=80):
             # abort if reached end
             if cfg.loop.max_steps and j > cfg.loop.max_steps:
                 mlb.purple(f'Exiting because reached maximum step for the above run (step: {j}, max: {cfg.loop.max_steps})')
                 return
-            
-            # train the model
-            for head in heads:
-                head.train()
-                head.zero_grad()
-            try:
-                start = time.time()
-                vloss = vhead.valueLossFromFrontier(f, g)
-                ploss = phead.policyLossFromFrontier(f, g)
-                elapsed = time.time() - start
-                print(f'loss {ploss.item():.2f} in {elapsed:.4f}s on {f.p}')
-            except InvalidSketchError:
-                print(f"Ignoring training program {f._fullProg} because of out of range intermediate computation")
-                continue
-            loss = vloss + ploss
+
+            # data
+            inputs, labels = data
+            inputs.to(cfg.device)
+            labels.to(cfg.device)
+
+            model.train()
+            optimizer.zero_grad()
+
+            outputs = model(inputs)
+            loss = loss_fn(outputs, labels)
+
             loss.backward()
+            optimizer.step()
 
             # for printing later
             if cfg.loop.print_every is not None: # dont gather these if we'll never empty it by printing
-                #plosses[j % loss_window] = ploss.item()
-                plosses.append(ploss.item())
-                #vlosses[j % loss_window] = vloss.item()
-                vlosses.append(vloss.item())
-            optimizer.step()
+                losses.append(loss.item())
 
             mlb.freezer('pause')
 
@@ -88,8 +70,6 @@ def main(
                 return
             if mlb.predicate('which'):
                 which(cfg)
-            if mlb.predicate('cfg'):
-                print(yaml(cfg))
             if mlb.predicate('rename'):
                 name = input('Enter new name:')
                 state.rename(name)

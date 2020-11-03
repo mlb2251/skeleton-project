@@ -7,7 +7,6 @@ import torch
 from collections import defaultdict
 import numpy as np
 import torch
-from torch.utils.tensorboard import SummaryWriter
 
 def main(cfg):
     if '___' in cfg.load:
@@ -114,7 +113,7 @@ def plot_model_results(model_results, file, toplevel=False, legend=None, cropped
 
     if toplevel:
         assert w is None
-        w = SummaryWriter(
+        w = Writer(
             log_dir=toplevel_path(''),
             max_queue=10,
         )

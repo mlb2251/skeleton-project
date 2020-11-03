@@ -7,6 +7,7 @@ from omegaconf import DictConfig,OmegaConf,open_dict
 from datetime import datetime
 import pathlib
 from pathlib import Path
+from torch.utils.tensorboard import SummaryWriter
 
 
 def which(cfg):
@@ -120,3 +121,19 @@ def deterministic(seed):
     torch.backends.cudnn.benchmark = False
     np.random.seed(seed)
     random.seed(seed)
+
+class Writer(SummaryWriter):
+    def __init__(self,*args, **kwargs):
+        print(f"intializing tensorboard writer")
+        super().__init__(*args,**kwargs)
+        print("done")
+    @contextlib.contextmanager
+    def saveable(self):
+        w = self.w
+        self.w = Poisoned
+        try:
+            yield None
+        finally:
+            self.w = w
+
+class Poisoned: pass

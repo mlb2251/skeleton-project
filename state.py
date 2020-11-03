@@ -3,13 +3,12 @@ import mlb
 import plot,test,train,fix
 from util import *
 
-from torch.utils.tensorboard import SummaryWriter
+import models
+
 import torch
 import itertools
 import contextlib
 import shutil
-
-class Poisoned: pass
 
 class State:
     def __init__(self):
@@ -106,18 +105,13 @@ class State:
 
         if cfg.prefix is not None:
             self.name = cfg.prefix + '.' + self.name
-        
-
-        
-
 
         params = itertools.chain.from_iterable([head.parameters() for head in heads])
         optimizer = torch.optim.Adam(params, lr=cfg.optim.lr, eps=1e-3, amsgrad=True)
 
-        vhead = InvalidIntermediatesValueHead(cfg)
-        astar = make_solver(cfg.data.test.solver,vhead,phead,cfg.data.train.max_depth)
-        j=0
-        frontiers = None
+        """
+        Make any models, solvers, etc
+        """
 
         loss_window = 1
         plosses = []
@@ -188,14 +182,7 @@ class State:
             if hasattr(v,'post_load'):
                 v.post_load()
     def init_tensorboard(self):
-        print("intializing tensorboard")
-        self.w = SummaryWriter(
-            log_dir=self.name,
-            max_queue=1,
-        )
-        print("writer for",self.name)
-        print("done")
-        self.no_pickle.append('w')
+        self.w = Writer(self.name)
     def rename(self,name):
         if self.name == name:
             return
@@ -203,7 +190,7 @@ class State:
         self.name = name
 
         # shut down tensorboard since it was using the old name
-        if hasattr(self,w) and self.w is not Poisoned:
+        if self.w is not Poisoned:
             self.w.flush()
             self.w.close()
             del self.w
